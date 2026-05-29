@@ -10,7 +10,5 @@ public class Libro
     public int CantidadTotal { get; set; }
     public int CantidadDisponible { get; set; }
     public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
-
-    public int AutorId { get; set; }
-    public Autor? Autor { get; set; }
+    public List<Autor> Autores { get; set; } = new();
 }

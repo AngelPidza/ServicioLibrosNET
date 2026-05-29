@@ -38,24 +38,41 @@ namespace LibrosService.Migrations
                     AnioPublicacion = table.Column<int>(type: "int", nullable: false),
                     CantidadTotal = table.Column<int>(type: "int", nullable: false),
                     CantidadDisponible = table.Column<int>(type: "int", nullable: false),
-                    FechaRegistro = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AutorId = table.Column<int>(type: "int", nullable: false)
+                    FechaRegistro = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Libros", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "LibroAutores",
+                columns: table => new
+                {
+                    AutoresId = table.Column<int>(type: "int", nullable: false),
+                    LibrosId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LibroAutores", x => new { x.AutoresId, x.LibrosId });
                     table.ForeignKey(
-                        name: "FK_Libros_Autores_AutorId",
-                        column: x => x.AutorId,
+                        name: "FK_LibroAutores_Autores_AutoresId",
+                        column: x => x.AutoresId,
                         principalTable: "Autores",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_LibroAutores_Libros_LibrosId",
+                        column: x => x.LibrosId,
+                        principalTable: "Libros",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Libros_AutorId",
-                table: "Libros",
-                column: "AutorId");
+                name: "IX_LibroAutores_LibrosId",
+                table: "LibroAutores",
+                column: "LibrosId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Libros_ISBN",
@@ -68,10 +85,13 @@ namespace LibrosService.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Libros");
+                name: "LibroAutores");
 
             migrationBuilder.DropTable(
                 name: "Autores");
+
+            migrationBuilder.DropTable(
+                name: "Libros");
         }
     }
 }

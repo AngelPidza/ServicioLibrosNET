@@ -17,7 +17,7 @@ public class LibroService : ILibroService
     public async Task<List<Libro>> ObtenerTodosAsync()
     {
         return await _context.Libros
-            .Include(l => l.Autor)
+            .Include(l => l.Autores)
             .OrderBy(l => l.Titulo)
             .ToListAsync();
     }
@@ -25,26 +25,26 @@ public class LibroService : ILibroService
     public async Task<Libro?> ObtenerPorIdAsync(int id)
     {
         return await _context.Libros
-            .Include(l => l.Autor)
+            .Include(l => l.Autores)
             .FirstOrDefaultAsync(l => l.Id == id);
     }
 
     public async Task<Libro?> ObtenerPorIsbnAsync(string isbn)
     {
         return await _context.Libros
-            .Include(l => l.Autor)
+            .Include(l => l.Autores)
             .FirstOrDefaultAsync(l => l.ISBN == isbn);
     }
 
     public async Task<List<Libro>> BuscarAsync(string? titulo, string? autor, string? categoria)
     {
-        var query = _context.Libros.Include(l => l.Autor).AsQueryable();
+        var query = _context.Libros.Include(l => l.Autores).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(titulo))
             query = query.Where(l => l.Titulo.Contains(titulo));
 
         if (!string.IsNullOrWhiteSpace(autor))
-            query = query.Where(l => l.Autor != null && l.Autor.Nombre.Contains(autor));
+            query = query.Where(l => l.Autores.Any(a => a.Nombre.Contains(autor)));
 
         if (!string.IsNullOrWhiteSpace(categoria))
             query = query.Where(l => l.Categoria.Contains(categoria));
@@ -54,9 +54,9 @@ public class LibroService : ILibroService
 
     public async Task<Libro> CrearAsync(CrearLibroDto dto)
     {
-        bool autorExiste = await _context.Autores.AnyAsync(a => a.Id == dto.AutorId);
-        if (!autorExiste)
-            throw new InvalidOperationException("El autor indicado no existe.");
+        var autores = await _context.Autores.Where(a => dto.AutorIds.Contains(a.Id)).ToListAsync();
+        if (autores.Count != dto.AutorIds.Count)
+            throw new InvalidOperationException("Uno o más autores indicados no existen.");
 
         bool isbnExiste = await _context.Libros.AnyAsync(l => l.ISBN == dto.ISBN);
         if (isbnExiste)
@@ -70,7 +70,7 @@ public class LibroService : ILibroService
             AnioPublicacion = dto.AnioPublicacion,
             CantidadTotal = dto.CantidadTotal,
             CantidadDisponible = dto.CantidadTotal,
-            AutorId = dto.AutorId
+            Autores = autores
         };
 
         _context.Libros.Add(libro);
@@ -81,12 +81,14 @@ public class LibroService : ILibroService
 
     public async Task<bool> ActualizarAsync(int id, ActualizarLibroDto dto)
     {
-        var libro = await _context.Libros.FindAsync(id);
+        var libro = await _context.Libros
+            .Include(l => l.Autores)
+            .FirstOrDefaultAsync(l => l.Id == id);
         if (libro == null) return false;
 
-        bool autorExiste = await _context.Autores.AnyAsync(a => a.Id == dto.AutorId);
-        if (!autorExiste)
-            throw new InvalidOperationException("El autor indicado no existe.");
+        var autores = await _context.Autores.Where(a => dto.AutorIds.Contains(a.Id)).ToListAsync();
+        if (autores.Count != dto.AutorIds.Count)
+            throw new InvalidOperationException("Uno o más autores indicados no existen.");
 
         bool isbnUsado = await _context.Libros.AnyAsync(l => l.ISBN == dto.ISBN && l.Id != id);
         if (isbnUsado)
@@ -101,7 +103,7 @@ public class LibroService : ILibroService
         libro.AnioPublicacion = dto.AnioPublicacion;
         libro.CantidadTotal = dto.CantidadTotal;
         libro.CantidadDisponible = dto.CantidadDisponible;
-        libro.AutorId = dto.AutorId;
+        libro.Autores = autores;
 
         await _context.SaveChangesAsync();
         return true;

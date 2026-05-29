@@ -31,11 +31,11 @@ public class LibrosDbContext : DbContext
             entity.Property(l => l.ISBN).IsRequired().HasMaxLength(20);
             entity.Property(l => l.Categoria).IsRequired().HasMaxLength(80);
             entity.HasIndex(l => l.ISBN).IsUnique();
-
-            entity.HasOne(l => l.Autor)
-                  .WithMany(a => a.Libros)
-                  .HasForeignKey(l => l.AutorId)
-                  .OnDelete(DeleteBehavior.Restrict);
         });
+
+        modelBuilder.Entity<Libro>()
+            .HasMany(l => l.Autores)
+            .WithMany(a => a.Libros)
+            .UsingEntity(j => j.ToTable("LibroAutores"));
     }
 }
